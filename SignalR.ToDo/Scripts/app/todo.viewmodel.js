@@ -29,7 +29,9 @@
             }
         };
 
-    datacontext.getTodoLists(todoLists, error); // load todoLists
+    $.connection.hub.start().done(function() {
+        datacontext.getTodoLists(todoLists, error); // load todoLists
+    });
 
     return {
         todoLists: todoLists,

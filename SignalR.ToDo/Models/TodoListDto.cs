@@ -1,9 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Web;
-using Newtonsoft.Json;
 
 namespace SignalR.ToDo.Models
 {
@@ -39,7 +35,7 @@ namespace SignalR.ToDo.Models
 
         public TodoList ToEntity()
         {
-            TodoList todo = new TodoList
+            var todo = new TodoList
             {
                 Title = Title,
                 TodoListId = TodoListId,
