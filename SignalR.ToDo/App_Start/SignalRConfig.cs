@@ -2,8 +2,7 @@
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Json;
 using Newtonsoft.Json;
-using SignalR.ToDo.Models;
-using SignalR.ToDo.Utils;
+using SignalR.ToDo.Configuration;
 
 namespace SignalR.ToDo
 {
@@ -13,17 +12,10 @@ namespace SignalR.ToDo
         {
             var serializerSettings = new JsonSerializerSettings
             {
-                ContractResolver = new FilteredCamelCasePropertyNamesContractResolver
-                {
-                    TypesToInclude = 
-                    { 
-                        typeof(TodoListDto), 
-                        typeof(TodoItemDto), 
-                    }
-                }
+                ContractResolver = new SignalRContractResolver()
             };
             var jsonNetSerializer = new JsonNetSerializer(serializerSettings);
-            GlobalHost.DependencyResolver.Register(typeof(IJsonSerializer), () => jsonNetSerializer);
+            GlobalHost.DependencyResolver.Register(typeof (IJsonSerializer), () => jsonNetSerializer);
 
             RouteTable.Routes.MapHubs();
         }
