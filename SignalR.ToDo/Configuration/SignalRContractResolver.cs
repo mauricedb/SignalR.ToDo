@@ -5,6 +5,9 @@ using Newtonsoft.Json.Serialization;
 
 namespace SignalR.ToDo.Configuration
 {
+    /// <summary>
+    /// From <a href="https://github.com/SignalR/SignalR/issues/500">SignalR Github</a>
+    /// </summary>
     public class SignalRContractResolver : IContractResolver
     {
         private readonly Assembly _assembly;

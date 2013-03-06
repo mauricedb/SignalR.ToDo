@@ -1,87 +1,99 @@
-﻿using Microsoft.AspNet.SignalR;
-using SignalR.ToDo.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
-using System.Linq;
 using System.Security;
+using Microsoft.AspNet.SignalR;
+using SignalR.ToDo.Models;
 
 namespace SignalR.ToDo.Hubs
 {
     [Authorize]
-    public class ToDoHub : Hub
+    public class TodoHub : Hub
     {
-        public IEnumerable<TodoListDto> GetTodoLists()
-        {
-            var userName = Context.User.Identity.Name;
-            using (var db = new TodoItemContext())
-            {
-                return db.TodoLists.Include("Todos")
-                    .Where(u => u.UserId == userName)
-                    .OrderByDescending(u => u.TodoListId)
-                    .AsEnumerable()
-                    .Select(todoList => new TodoListDto(todoList))
-                    .ToArray();
-            }
-        }
 
-        public void PutTodoList(TodoListDto todoListDto)
+        // PUT api/Todo/5
+        public void PutTodoItem(TodoItemDto todoItemDto)
         {
-            var context = new ValidationContext(todoListDto, null, null);
+            var context = new ValidationContext(todoItemDto, null, null);
             // ToDo: Get the actual error message to the client
-            Validator.ValidateObject(todoListDto, context);
-
-            TodoList todoList = todoListDto.ToEntity();
+            Validator.ValidateObject(todoItemDto, context);
 
             using (var db = new TodoItemContext())
             {
-                if (db.Entry(todoList).Entity.UserId != Context.User.Identity.Name)
-                {
-                    throw new SecurityException("Trying to modify a record that does not belong to the user");
-                }
-
-                db.Entry(todoList).State = EntityState.Modified;
-                db.SaveChanges();
-            }
-        }
-
-        public TodoListDto PostTodoList(TodoListDto todoListDto)
-        {
-            var context = new ValidationContext(todoListDto, null, null);
-            // ToDo: Get the actual error message to the client
-            Validator.ValidateObject(todoListDto, context);
-
-            todoListDto.UserId = Context.User.Identity.Name;
-            TodoList todoList = todoListDto.ToEntity();
-
-            using (var db = new TodoItemContext())
-            {
-                db.TodoLists.Add(todoList);
-                db.SaveChanges();
-                todoListDto.TodoListId = todoList.TodoListId;
-
-                return todoListDto;
-            }
-        }
-
-        public void DeleteTodoList(int id)
-        {
-            using (var db = new TodoItemContext())
-            {
-                TodoList todoList = db.TodoLists.Find(id);
+                TodoItem todoItem = todoItemDto.ToEntity();
+                TodoList todoList = db.TodoLists.Find(todoItem.TodoListId);
                 if (todoList == null)
                 {
-                    throw new ArgumentException("Not found", "id");
+                    throw new InvalidOperationException();
                 }
 
-                if (db.Entry(todoList).Entity.UserId != Context.User.Identity.Name)
-                {
-                    throw new SecurityException("Trying to delete a record that does not belong to the user");
-                }
+                AuthenticateUser(todoList);
 
-                db.TodoLists.Remove(todoList);
+                // Need to detach to avoid duplicate primary key exception when SaveChanges is called
+                db.Entry(todoList).State = EntityState.Detached;
+                db.Entry(todoItem).State = EntityState.Modified;
+
                 db.SaveChanges();
+            }
+        }
+
+        // POST api/Todo
+        public TodoItemDto PostTodoItem(TodoItemDto todoItemDto)
+        {
+            var context = new ValidationContext(todoItemDto, null, null);
+            // ToDo: Get the actual error message to the client
+            Validator.ValidateObject(todoItemDto, context);
+
+            using (var db = new TodoItemContext())
+            {
+                TodoList todoList = db.TodoLists.Find(todoItemDto.TodoListId);
+                if (todoList == null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                AuthenticateUser(todoList);
+
+                TodoItem todoItem = todoItemDto.ToEntity();
+
+                // Need to detach to avoid loop reference exception during JSON serialization
+                db.Entry(todoList).State = EntityState.Detached;
+                db.TodoItems.Add(todoItem);
+                db.SaveChanges();
+                todoItemDto.TodoItemId = todoItem.TodoItemId;
+
+                return todoItemDto;
+            }
+        }
+
+        // DELETE api/Todo/5
+        public TodoItemDto DeleteTodoItem(int id)
+        {
+            using (var db = new TodoItemContext())
+            {
+                TodoItem todoItem = db.TodoItems.Find(id);
+                if (todoItem == null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                AuthenticateUser(db.Entry(todoItem.TodoList).Entity);
+
+                var todoItemDto = new TodoItemDto(todoItem);
+                db.TodoItems.Remove(todoItem);
+
+                db.SaveChanges();
+
+                return todoItemDto;
+            }
+        }
+
+        private void AuthenticateUser(TodoList todoList)
+        {
+            if (todoList.UserId != Context.User.Identity.Name)
+            {
+                // Trying to modify a record that does not belong to the user
+                throw new SecurityException("Trying to modify a record that does not belong to the user");
             }
         }
     }

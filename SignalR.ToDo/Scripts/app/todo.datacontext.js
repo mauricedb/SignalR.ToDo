@@ -14,7 +14,8 @@ window.todoApp.datacontext = (function () {
         deleteTodoList: deleteTodoList
     };
 
-    var hub = $.connection.toDoHub;
+    var todoListHub = $.connection.todoListHub;
+    var todoHub = $.connection.todoHub;
     
     return datacontext;
 
@@ -27,7 +28,7 @@ window.todoApp.datacontext = (function () {
 
 
     function getTodoLists(todoListsObservable, errorObservable) {
-        return hub.server.getTodoLists()
+        return todoListHub.server.getTodoLists()
             .done(getSucceeded)
             .fail(getFailed);
 
@@ -43,7 +44,7 @@ window.todoApp.datacontext = (function () {
 
     function saveNewTodoList(todoList) {
         clearErrorMessage(todoList);
-        return hub.server.postTodoList(ko.toJS(todoList))
+        return todoListHub.server.postTodoList(ko.toJS(todoList))
             .done(function (result) {
                 todoList.todoListId = result.todoListId;
                 todoList.userId = result.userId;
@@ -55,14 +56,14 @@ window.todoApp.datacontext = (function () {
 
     function saveChangedTodoList(todoList) {
         clearErrorMessage(todoList);
-        return hub.server.putTodoList(ko.toJS(todoList))
+        return todoListHub.server.putTodoList(ko.toJS(todoList))
             .fail(function () {
                 todoList.errorMessage("Error updating the todo list title. Please make sure it is non-empty.");
             });
     }
 
     function deleteTodoList(todoList) {
-        return hub.server.deleteTodoList(todoList.todoListId)
+        return todoListHub.server.deleteTodoList(todoList.todoListId)
             .fail(function () {
                 todoList.errorMessage("Error removing todo list.");
             });
@@ -72,7 +73,8 @@ window.todoApp.datacontext = (function () {
 
     function saveNewTodoItem(todoItem) {
         clearErrorMessage(todoItem);
-        return ajaxRequest("post", todoItemUrl(), todoItem)
+        //return ajaxRequest("post", todoItemUrl(), todoItem)
+        return todoHub.server.postTodoItem(ko.toJS(todoItem))
             .done(function (result) {
                 todoItem.todoItemId = result.todoItemId;
             })
@@ -81,14 +83,16 @@ window.todoApp.datacontext = (function () {
             });
     }
     function deleteTodoItem(todoItem) {
-        return ajaxRequest("delete", todoItemUrl(todoItem.todoItemId))
+        //return ajaxRequest("delete", todoItemUrl(todoItem.todoItemId))
+        return todoHub.server.deleteTodoItem(ko.toJS(todoItem.todoItemId))
             .fail(function () {
                 todoItem.errorMessage("Error removing todo item.");
             });
     }
     function saveChangedTodoItem(todoItem) {
         clearErrorMessage(todoItem);
-        return ajaxRequest("put", todoItemUrl(todoItem.todoItemId), todoItem, "text")
+        //return ajaxRequest("put", todoItemUrl(todoItem.todoItemId), todoItem, "text")
+        return todoHub.server.putTodoItem(ko.toJS(todoItem))
             .fail(function () {
                 todoItem.errorMessage("Error updating todo item.");
             });
@@ -96,24 +100,24 @@ window.todoApp.datacontext = (function () {
 
     // Private
     function clearErrorMessage(entity) { entity.errorMessage(null); }
-    function ajaxRequest(type, url, data, dataType) { // Ajax helper
-        var options = {
-            dataType: dataType || "json",
-            contentType: "application/json",
-            cache: false,
-            type: type,
-            data: data ? data.toJson() : null
-        };
-        var antiForgeryToken = $("#antiForgeryToken").val();
-        if (antiForgeryToken) {
-            options.headers = {
-                'RequestVerificationToken': antiForgeryToken
-            }
-        }
-        return $.ajax(url, options);
-    }
+    //function ajaxRequest(type, url, data, dataType) { // Ajax helper
+    //    var options = {
+    //        dataType: dataType || "json",
+    //        contentType: "application/json",
+    //        cache: false,
+    //        type: type,
+    //        data: data ? data.toJson() : null
+    //    };
+    //    var antiForgeryToken = $("#antiForgeryToken").val();
+    //    if (antiForgeryToken) {
+    //        options.headers = {
+    //            'RequestVerificationToken': antiForgeryToken
+    //        }
+    //    }
+    //    return $.ajax(url, options);
+    //}
     // routes
-    function todoListUrl(id) { return "/api/todolist/" + (id || ""); }
-    function todoItemUrl(id) { return "/api/todo/" + (id || ""); }
+    //function todoListUrl(id) { return "/api/todolist/" + (id || ""); }
+    //function todoItemUrl(id) { return "/api/todo/" + (id || ""); }
 
 })();
