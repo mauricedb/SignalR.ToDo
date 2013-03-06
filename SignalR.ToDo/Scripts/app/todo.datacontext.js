@@ -17,6 +17,14 @@ window.todoApp.datacontext = (function () {
     var todoListHub = $.connection.todoListHub;
     var todoHub = $.connection.todoHub;
     
+    todoListHub.client.exceptionHandler = function (message) {
+        alert(message);
+    };
+
+    todoHub.client.exceptionHandler = function (message) {
+        alert(message);
+    };
+
     return datacontext;
 
     function createTodoItem(data) {

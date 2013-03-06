@@ -17,6 +17,8 @@ namespace SignalR.ToDo
             var jsonNetSerializer = new JsonNetSerializer(serializerSettings);
             GlobalHost.DependencyResolver.Register(typeof (IJsonSerializer), () => jsonNetSerializer);
 
+            GlobalHost.HubPipeline.AddModule(new ExceptionNotifierHubPipelineModule());
+
             RouteTable.Routes.MapHubs();
         }
     }
