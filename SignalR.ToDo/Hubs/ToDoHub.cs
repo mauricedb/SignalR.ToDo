@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Security;
+using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using SignalR.ToDo.Models;
 
@@ -10,6 +11,12 @@ namespace SignalR.ToDo.Hubs
     [Authorize]
     public class TodoHub : Hub
     {
+        public override Task OnConnected()
+        {
+            Groups.Add(Context.ConnectionId, Context.User.Identity.Name);
+            return base.OnConnected();
+        }
+
 
         // PUT api/Todo/5
         public void PutTodoItem(TodoItemDto todoItemDto)
@@ -34,6 +41,8 @@ namespace SignalR.ToDo.Hubs
                 db.Entry(todoItem).State = EntityState.Modified;
 
                 db.SaveChanges();
+
+                Clients.OthersInGroup(Context.User.Identity.Name).TodoItemUpdated(todoItemDto);
             }
         }
 
@@ -61,6 +70,8 @@ namespace SignalR.ToDo.Hubs
                 db.TodoItems.Add(todoItem);
                 db.SaveChanges();
                 todoItemDto.TodoItemId = todoItem.TodoItemId;
+
+                Clients.OthersInGroup(Context.User.Identity.Name).TodoItemUpdated(todoItemDto);
 
                 return todoItemDto;
             }

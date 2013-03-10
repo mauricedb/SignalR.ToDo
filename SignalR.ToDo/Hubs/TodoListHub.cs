@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNet.SignalR;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNet.SignalR;
 using SignalR.ToDo.Models;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,12 @@ namespace SignalR.ToDo.Hubs
     [Authorize]
     public class TodoListHub : Hub
     {
+        public override Task OnConnected()
+        {
+            Groups.Add(Context.ConnectionId, Context.User.Identity.Name);
+            return base.OnConnected();
+        }
+
         public IEnumerable<TodoListDto> GetTodoLists()
         {
             var userName = Context.User.Identity.Name;
@@ -44,6 +51,8 @@ namespace SignalR.ToDo.Hubs
                 db.Entry(todoList).State = EntityState.Modified;
                 db.SaveChanges();
             }
+
+            Clients.OthersInGroup(Context.User.Identity.Name).TodoListItemUpdated(todoListDto);
         }
 
         public TodoListDto PostTodoList(TodoListDto todoListDto)
@@ -60,6 +69,8 @@ namespace SignalR.ToDo.Hubs
                 db.TodoLists.Add(todoList);
                 db.SaveChanges();
                 todoListDto.TodoListId = todoList.TodoListId;
+
+                Clients.OthersInGroup(Context.User.Identity.Name).TodoListItemUpdated(todoListDto);
 
                 return todoListDto;
             }

@@ -16,16 +16,56 @@ window.todoApp.datacontext = (function () {
 
     var todoListHub = $.connection.todoListHub;
     var todoHub = $.connection.todoHub;
-    
-    todoListHub.client.exceptionHandler = function (message) {
-        alert(message);
-    };
+    var todoLists;
 
-    todoHub.client.exceptionHandler = function (message) {
-        alert(message);
-    };
+    toastr.options = { positionClass: "toast-bottom-right" };
+    todoListHub.client.exceptionHandler = displayError;
+    todoHub.client.exceptionHandler = displayError;
+
+    todoListHub.client.todoListItemUpdated = todoListItemUpdated;
+    todoHub.client.todoItemUpdated = todoItemUpdated;
+
 
     return datacontext;
+
+    function displayError(message) {
+        toastr.error(message);
+    }
+
+    function todoItemUpdated(todoItemDto) {
+        var todoItem = createTodoItem(todoItemDto);
+
+        var currentList = ko.utils.arrayFirst(todoLists(), function (item) {
+            return item.todoListId === todoItem.todoListId;
+        });
+
+        if (currentList) {
+            var currentTodo = ko.utils.arrayFirst(currentList.todos(), function (item) {
+                return item.todoItemId === todoItem.todoItemId;
+            });
+
+            if (currentTodo) {
+                currentList.todos.replace(currentTodo, todoItem);
+            } else {
+                currentList.todos.push(todoItem);
+            }
+        }
+    };
+
+
+    function todoListItemUpdated(todoListItem) {
+        var todoList = createTodoList(todoListItem);
+
+        var currentItem = ko.utils.arrayFirst(todoLists(), function (item) {
+            return item.todoListId === todoList.todoListId;
+        });
+
+        if (currentItem) {
+            todoLists.replace(currentItem, todoList);
+        } else {
+            todoLists.unshift(todoList);
+        }
+    };
 
     function createTodoItem(data) {
         return new datacontext.todoItem(data); // todoItem is injected by todo.model.js
@@ -36,6 +76,8 @@ window.todoApp.datacontext = (function () {
 
 
     function getTodoLists(todoListsObservable, errorObservable) {
+        todoLists = todoListsObservable;
+
         return todoListHub.server.getTodoLists()
             .done(getSucceeded)
             .fail(getFailed);
