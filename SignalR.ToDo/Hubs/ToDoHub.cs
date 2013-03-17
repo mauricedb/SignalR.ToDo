@@ -78,6 +78,7 @@ namespace SignalR.ToDo.Hubs
         }
 
         // DELETE api/Todo/5
+
         public TodoItemDto DeleteTodoItem(int id)
         {
             using (var db = new TodoItemContext())
@@ -94,6 +95,8 @@ namespace SignalR.ToDo.Hubs
                 db.TodoItems.Remove(todoItem);
 
                 db.SaveChanges();
+
+                Clients.OthersInGroup(Context.User.Identity.Name).TodoItemDeleted(todoItem.TodoListId, todoItem.TodoItemId);
 
                 return todoItemDto;
             }

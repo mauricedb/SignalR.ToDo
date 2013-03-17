@@ -19,12 +19,15 @@ window.todoApp.datacontext = (function () {
     var todoLists;
 
     toastr.options = { positionClass: "toast-bottom-right" };
+
+    // Notifications of changes from other browser instances
     todoListHub.client.exceptionHandler = displayError;
     todoHub.client.exceptionHandler = displayError;
 
     todoListHub.client.todoListItemUpdated = todoListItemUpdated;
+    todoListHub.client.todoListItemDeleted = todoListItemDeleted;
     todoHub.client.todoItemUpdated = todoItemUpdated;
-
+    todoHub.client.todoItemDeleted = todoItemDeleted;
 
     return datacontext;
 
@@ -50,8 +53,23 @@ window.todoApp.datacontext = (function () {
                 currentList.todos.push(todoItem);
             }
         }
-    };
+    }
 
+    function todoItemDeleted(todoListId, todoItemId) {
+        var currentList = ko.utils.arrayFirst(todoLists(), function (item) {
+            return item.todoListId === todoListId;
+        });
+
+        if (currentList) {
+            var currentTodo = ko.utils.arrayFirst(currentList.todos(), function (item) {
+                return item.todoItemId === todoItemId;
+            });
+
+            if (currentTodo) {
+                currentList.todos.remove(currentTodo);
+            }
+        }
+    }
 
     function todoListItemUpdated(todoListItem) {
         var todoList = createTodoList(todoListItem);
@@ -65,11 +83,22 @@ window.todoApp.datacontext = (function () {
         } else {
             todoLists.unshift(todoList);
         }
-    };
+    }
+
+    function todoListItemDeleted(todoListId) {
+        var currentList = ko.utils.arrayFirst(todoLists(), function (item) {
+            return item.todoListId === todoListId;
+        });
+
+        if (currentList) {
+            todoLists.remove(currentList);
+        }
+    }
 
     function createTodoItem(data) {
         return new datacontext.todoItem(data); // todoItem is injected by todo.model.js
     }
+
     function createTodoList(data) {
         return new datacontext.todoList(data); // todoList is injected by todo.model.js
     }

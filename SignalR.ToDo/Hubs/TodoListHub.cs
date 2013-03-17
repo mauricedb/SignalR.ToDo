@@ -93,6 +93,8 @@ namespace SignalR.ToDo.Hubs
 
                 db.TodoLists.Remove(todoList);
                 db.SaveChanges();
+
+                Clients.OthersInGroup(Context.User.Identity.Name).TodoListItemDeleted(id);
             }
         }
     }
